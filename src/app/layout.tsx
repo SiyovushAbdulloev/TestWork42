@@ -25,7 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <main style={{ background: "url(/assets/images/background.jpg)"}} className="min-vh-100">
+          {children}
+        </main>
       </body>
     </html>
   );

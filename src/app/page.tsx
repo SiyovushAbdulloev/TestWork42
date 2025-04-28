@@ -1,95 +1,99 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
+
+import { useState } from "react";
+import axios from "axios";
+import Link from "next/link";
+import { Spinner } from "react-bootstrap";
+import styles from "@/styles/Home.module.scss";
+import ForecastCard, {ForecastCard as ForecastI} from "@/components/ForecastCard";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [city, setCity] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [weather, setWeather] = useState<ForecastI[]>([]);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const fetchWeather = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+      const { data } = await axios.get(
+          `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
+      );
+
+      const { lat, lon } = data.coord;
+
+      const response = await axios.get(
+          `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly,alerts&appid=${apiKey}`
+      );
+
+      setCity('')
+
+      console.log({response})
+
+      setWeather(response.data.daily.map((day: any) => ({
+        date: day.dt,
+        temp: day.temp,
+        description: day.weather[0].description,
+        icon: day.weather[0].icon,
+        humidity: day.humidity,
+        windSpeed: day.wind_speed,
+        sunrise: day.sunrise,
+        sunset: day.sunset,
+      })))
+    } catch (err) {
+      console.log({err})
+      setError("City not found or API error.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (city.trim() !== "") {
+      fetchWeather();
+    }
+  };
+
+  return (
+      <div className={`container ${styles.home}`}>
+        <h1 className="my-4">Weather App</h1>
+
+        <form onSubmit={handleSearch} className="mb-4">
+          <div className="input-group">
+            <input
+                type="text"
+                className="form-control"
+                placeholder="Enter city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <button className="btn btn-primary" type="submit">
+              Search
+            </button>
+          </div>
+        </form>
+
+        {loading && (
+            <div className="text-center my-5">
+              <Spinner animation="border"/>
+            </div>
+        )}
+
+        {error && <div className="alert alert-danger">{error}</div>}
+
+        {weather.length ? (
+            <div className="d-flex gap-3 flex-wrap">
+              {weather.map(item => (
+                  <ForecastCard
+                      key={item.date}
+                      data={item}
+                  />
+              ))}
+            </div>
+        ) : null}
+      </div>
   );
 }
