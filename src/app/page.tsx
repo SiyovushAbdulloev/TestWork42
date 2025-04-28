@@ -6,13 +6,16 @@ import Link from "next/link";
 import { Spinner } from "react-bootstrap";
 import styles from "@/styles/Home.module.scss";
 import ForecastCard, {ForecastCard as ForecastI} from "@/components/ForecastCard";
+import {useWeatherStore} from "@/app/store/store";
 
 export default function Home() {
   const [city, setCity] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [isFavoriteAdded, setIsFavoriteAdded] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [currentWeather, setCurrentWeather] = useState<ForecastI | null>(null);
   const [coordinates, setCoordinates] = useState<{ lon: number, lat: number } | null>(null);
+  const {setFavoriteCity, favorite_cities} = useWeatherStore()
 
   const fetchWeather = async () => {
     setLoading(true);
@@ -27,7 +30,7 @@ export default function Home() {
       setCurrentWeather({
           date: data.dt,
           temp: {
-            day: 234234234234,
+            day: data.main.temp,
             min: data.main.temp_min,
             max: data.main.temp_max,
           },
@@ -37,8 +40,7 @@ export default function Home() {
           windSpeed: data.wind.speed,
           sunrise: data.sys.sunrise,
           sunset: data.sys.sunset,
-    })
-      setCity('')
+      })
     } catch (err) {
       console.log({err})
       setError("City not found or API error.");
@@ -54,9 +56,26 @@ export default function Home() {
     }
   };
 
+  const onFavourite = () => {
+    setIsFavoriteAdded(true)
+    if (coordinates) {
+      setFavoriteCity({
+        name: city,
+        lat: coordinates?.lat,
+        lon: coordinates?.lon,
+      })
+    }
+    setIsFavoriteAdded(false);
+  }
+
   return (
       <div className={`container ${styles.home}`}>
-        <h1 className="my-4">Weather App</h1>
+        <div className="d-flex justify-content-between align-items-center">
+          <h1 className="my-4">Weather App</h1>
+          <Link href="/favourites" className="text-white">
+            To favourites
+          </Link>
+        </div>
 
         <form onSubmit={handleSearch} className="mb-4">
           <div className="input-group">
@@ -81,12 +100,26 @@ export default function Home() {
 
         {error && <div className="alert alert-danger">{error}</div>}
 
-        {currentWeather && (
-            <Link href={`/forecast?lat=${coordinates?.lat}&lon=${coordinates?.lon}`}>
-              <ForecastCard
-                  data={currentWeather}
-              />
-            </Link>
+        {currentWeather && coordinates && (
+            <>
+              <Link href={`/forecast?lat=${coordinates.lat}&lon=${coordinates.lon}`}>
+                <ForecastCard data={currentWeather} />
+              </Link>
+
+              <div className="d-flex justify-content-center mt-3">
+                  {favorite_cities.find(c => c.lat === coordinates.lat && c.lon === coordinates.lon) ? (
+                      <div className="text-success fw-bold">
+                        🌟 Added
+                      </div>
+                      ) : (
+                      <button onClick={onFavourite} className="btn btn-warning">
+                        {isFavoriteAdded ? (
+                            <Spinner animation="border"/>
+                        ) : "Add to Favorites"}
+                      </button>
+                  )}
+              </div>
+            </>
         )}
       </div>
   );
