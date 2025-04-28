@@ -11,7 +11,8 @@ export default function Home() {
   const [city, setCity] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [weather, setWeather] = useState<ForecastI[]>([]);
+  const [currentWeather, setCurrentWeather] = useState<ForecastI | null>(null);
+  const [coordinates, setCoordinates] = useState<{ lon: number, lat: number } | null>(null);
 
   const fetchWeather = async () => {
     setLoading(true);
@@ -22,26 +23,22 @@ export default function Home() {
           `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
       );
 
-      const { lat, lon } = data.coord;
-
-      const response = await axios.get(
-          `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly,alerts&appid=${apiKey}`
-      );
-
+      setCoordinates(data.coord)
+      setCurrentWeather({
+          date: data.dt,
+          temp: {
+            day: 234234234234,
+            min: data.main.temp_min,
+            max: data.main.temp_max,
+          },
+          description: data.weather[0].description,
+          icon: data.weather[0].icon,
+          humidity: data.main.humidity,
+          windSpeed: data.wind.speed,
+          sunrise: data.sys.sunrise,
+          sunset: data.sys.sunset,
+    })
       setCity('')
-
-      console.log({response})
-
-      setWeather(response.data.daily.map((day: any) => ({
-        date: day.dt,
-        temp: day.temp,
-        description: day.weather[0].description,
-        icon: day.weather[0].icon,
-        humidity: day.humidity,
-        windSpeed: day.wind_speed,
-        sunrise: day.sunrise,
-        sunset: day.sunset,
-      })))
     } catch (err) {
       console.log({err})
       setError("City not found or API error.");
@@ -84,16 +81,13 @@ export default function Home() {
 
         {error && <div className="alert alert-danger">{error}</div>}
 
-        {weather.length ? (
-            <div className="d-flex gap-3 flex-wrap">
-              {weather.map(item => (
-                  <ForecastCard
-                      key={item.date}
-                      data={item}
-                  />
-              ))}
-            </div>
-        ) : null}
+        {currentWeather && (
+            <Link href={`/forecast?lat=${coordinates?.lat}&lon=${coordinates?.lon}`}>
+              <ForecastCard
+                  data={currentWeather}
+              />
+            </Link>
+        )}
       </div>
   );
 }
