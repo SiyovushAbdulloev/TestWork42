@@ -1,19 +1,20 @@
 "use client"
 
 import { useState } from "react";
-import axios from "axios";
 import Link from "next/link";
 import { Spinner } from "react-bootstrap";
 import styles from "@/styles/Home.module.scss";
-import ForecastCard, {ForecastCard as ForecastI} from "@/components/ForecastCard";
-import {useWeatherStore} from "@/app/store/store";
+import ForecastCard from "@/components/ForecastCard";
+import {useWeatherStore} from "@/store/weatherStore";
+import {fetchCurrentWeather} from "@/api/weather";
+import {ForecastCard as ForecastCardI} from "@/types/weather";
 
 export default function Home() {
   const [city, setCity] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [isFavoriteAdded, setIsFavoriteAdded] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [currentWeather, setCurrentWeather] = useState<ForecastI | null>(null);
+  const [currentWeather, setCurrentWeather] = useState<ForecastCardI | null>(null);
   const [coordinates, setCoordinates] = useState<{ lon: number, lat: number } | null>(null);
   const {setFavoriteCity, favorite_cities} = useWeatherStore()
 
@@ -21,10 +22,7 @@ export default function Home() {
     setLoading(true);
     setError("");
     try {
-      const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
-      const { data } = await axios.get(
-          `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
-      );
+      const data = await fetchCurrentWeather(city)
 
       setCoordinates(data.coord)
       setCurrentWeather({

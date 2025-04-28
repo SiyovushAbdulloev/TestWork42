@@ -1,16 +1,17 @@
 "use client"
 
-import axios from "axios";
 import {useSearchParams} from "next/navigation";
 import {useEffect, useState} from "react";
-import ForecastCard, {ForecastCard as ForecastCardI} from "@/components/ForecastCard";
+import ForecastCard from "@/components/ForecastCard";
 import Link from "next/link";
 import {Spinner} from "react-bootstrap";
+import {fetchForecast} from "@/api/weather";
+import {ForecastCard as ForecastCardI} from "@/types/weather";
 
 export default function Day() {
   const searchParams = useSearchParams();
-  const lon = searchParams.get('lon')
-  const lat = searchParams.get('lat')
+  const lon = searchParams.get('lon') ?? ''
+  const lat = searchParams.get('lat') ?? ''
   const [forecast, setForecast] = useState<ForecastCardI[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -18,16 +19,13 @@ export default function Day() {
   useEffect(() => {
     if (!lon && !lat) return;
 
-    const fetchForecast = async () => {
+    const fetchForecastData = async () => {
       setLoading(true);
       setError("");
       try {
-        const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
-        const response = await axios.get(
-            `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly,alerts&appid=${apiKey}`
-        );
+        const response = await fetchForecast(lat, lon)
 
-        setForecast(response.data.daily.map((day: any) => ({
+        setForecast(response.daily.map((day: any) => ({
           date: day.dt,
           temp: day.temp,
           description: day.weather[0].description,
@@ -44,7 +42,7 @@ export default function Day() {
       }
     };
 
-    fetchForecast();
+    fetchForecastData();
   }, [lat, lon]);
 
   if (!lon && !lat) {

@@ -1,19 +1,9 @@
 // components/ForecastCard.tsx
 import React from "react";
-
-export interface ForecastCard {
-  date: number;
-  temp: { day: number; min: number; max: number };
-  description: string;
-  icon: string;
-  humidity: number;
-  windSpeed: number;
-  sunrise: number;
-  sunset: number;
-}
+import {ForecastCard as ForecastCardI} from "@/types/weather";
 
 interface ForecastCardProps {
-  data: ForecastCard;
+  data: ForecastCardI;
 }
 
 const ForecastCard: React.FC<ForecastCardProps> = ({data}: ForecastCardProps) => {
